@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snakes and Ladders - Big Stack Nutcracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #1a1a2e;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #game-board {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #board-image {
+            position: absolute;
+            width: auto;
+            height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        #slot-game {
+            position: absolute;
+            /* Center the iframe in the checkered area */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 66%;
+            height: 79%;
+            border: none;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            z-index: 50;
+        }
+
+        #board-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('snakesnladders.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #pawn {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background-image: url('santashade.png');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+            transform: translate(-50%, -50%);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+
+        #dice-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            z-index: 200;
+            display: none;
+        }
+
+        #dice-display.show {
+            display: block;
+            animation: bounceIn 0.5s;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        #message-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 300;
+            display: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        #message-display.show {
+            display: block;
+            animation: fadeInScale 0.5s;
+        }
+
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        #win-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 400;
+        }
+
+        #win-screen.show {
+            display: flex;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #win-screen h1 {
+            font-size: 48px;
+            color: #FFD700;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        #win-screen button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #win-screen button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        #position-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            z-index: 200;
+            display: none;
+        }
+
+        #calibration-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            z-index: 250;
+            width: 200px;
+            font-size: 12px;
+        }
+
+        #calibration-panel h3 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+        }
+
+        #calibration-panel .status {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 6px 0;
+            color: #4CAF50;
+        }
+
+        #calibration-panel .instructions {
+            font-size: 11px;
+            margin: 6px 0;
+            color: #ccc;
+        }
+
+        #calibration-panel button {
+            background: rgba(76, 175, 80, 0.95);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            margin: 2px;
+            transition: all 0.3s;
+            width: calc(50% - 4px);
+        }
+
+        #calibration-panel button.full-width {
+            width: calc(100% - 4px);
+        }
+
+        #calibration-panel button:hover {
+            background: rgba(76, 175, 80, 1);
+            transform: scale(1.05);
+        }
+
+        #calibration-panel button.secondary {
+            background: rgba(33, 150, 243, 0.95);
+        }
+
+        #calibration-panel button.secondary:hover {
+            background: rgba(33, 150, 243, 1);
+        }
+
+        #calibration-panel button.danger {
+            background: rgba(244, 67, 54, 0.95);
+        }
+
+        #calibration-panel button.danger:hover {
+            background: rgba(244, 67, 54, 1);
+        }
+
+        .calibration-cursor {
+            cursor: crosshair !important;
+        }
+
+        #position-marker {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 0, 0, 0.6);
+            border: 4px solid #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 250;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        .calibration-mode #pawn {
+            width: 90px !important;
+            height: 90px !important;
+            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.9)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+            z-index: 240 !important;
+        }
+
+        .dice-rolling {
+            animation: spin 0.5s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="game-board">
+            <!-- Board image -->
+            <img id="board-image" src="snakesnladders.png" alt="Game Board">
+
+            <!-- Slot game iframe -->
+            <iframe id="slot-game"></iframe>
+
+            <!-- Board overlay (snakes and ladders on top) -->
+            <div id="board-overlay"></div>
+
+            <!-- Pawn -->
+            <div id="pawn"></div>
+
+            <!-- Position info -->
+            <div id="position-info">
+                Position: <span id="current-position">1</span>
+            </div>
+
+            <!-- Dice display -->
+            <div id="dice-display">
+                🎲 Roll: <span id="dice-value">-</span>
+            </div>
+
+            <!-- Message display -->
+            <div id="message-display"></div>
+
+            <!-- Win screen -->
+            <div id="win-screen">
+                <h1>🏆 YOU WON! 🏆</h1>
+                <p style="font-size: 24px; color: #fff;">Congratulations! You reached the finish!</p>
+                <button onclick="resetGame()">Play Again</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Board position coordinates (x, y percentages)
+        // Calibrated positions - clicked by user on actual tile centers
+        const BOARD_POSITIONS = {
+            1: { x: 10.3, y: 94.7 },
+            2: { x: 20.0, y: 94.7 },
+            3: { x: 28.2, y: 94.7 },
+            4: { x: 37.4, y: 94.6 },
+            5: { x: 46.2, y: 94.9 },
+            6: { x: 54.9, y: 94.7 },
+            7: { x: 63.8, y: 94.6 },
+            8: { x: 72.6, y: 94.9 },
+            9: { x: 81.3, y: 94.7 },
+            10: { x: 89.7, y: 94.6 },
+            11: { x: 90.0, y: 87.3 },
+            12: { x: 90.5, y: 81.2 },
+            13: { x: 89.7, y: 72.4 },
+            14: { x: 90.3, y: 64.5 },
+            15: { x: 90.3, y: 55.7 },
+            16: { x: 89.5, y: 47.6 },
+            17: { x: 90.3, y: 39.0 },
+            18: { x: 90.0, y: 30.4 },
+            19: { x: 90.8, y: 22.3 },
+            20: { x: 90.0, y: 13.9 },
+            21: { x: 90.3, y: 5.7 },
+            22: { x: 81.3, y: 5.9 },
+            23: { x: 72.6, y: 5.9 },
+            24: { x: 63.3, y: 6.0 },
+            25: { x: 54.6, y: 6.0 },
+            26: { x: 46.2, y: 6.3 },
+            27: { x: 36.9, y: 5.9 },
+            28: { x: 29.0, y: 5.9 },
+            29: { x: 19.7, y: 5.7 },
+            30: { x: 10.5, y: 6.0 },
+            31: { x: 11.0, y: 14.2 },
+            32: { x: 10.8, y: 22.3 },
+            33: { x: 10.5, y: 30.7 },
+            34: { x: 11.3, y: 38.9 },
+            35: { x: 10.8, y: 47.4 },
+            36: { x: 11.0, y: 55.9 },
+            37: { x: 10.8, y: 64.5 },
+            38: { x: 10.8, y: 72.4 },
+            39: { x: 10.5, y: 80.7 },
+            40: { x: 10.8, y: 87.8 } // FINISH
+        };
+
+        const pawn = document.getElementById('pawn');
+        const diceDisplay = document.getElementById('dice-display');
+        const diceValue = document.getElementById('dice-value');
+        const messageDisplay = document.getElementById('message-display');
+        const winScreen = document.getElementById('win-screen');
+        const currentPositionSpan = document.getElementById('current-position');
+
+        // Initialize pawn at position 1
+        function setPawnPosition(position) {
+            const pos = BOARD_POSITIONS[position];
+            if (pos) {
+                pawn.style.left = pos.x + '%';
+                pawn.style.top = pos.y + '%';
+                currentPositionSpan.textContent = position === 40 ? 'FINISH' : position;
+            }
+        }
+
+        // Initialize game state
+        if (!window.gameState) {
+            window.gameState = {
+                position: 1,
+                isPlaying: false,
+                hasWon: false
+            };
+        }
+
+        // Set initial position
+        setPawnPosition(1);
+
+        // Show message temporarily
+        function showMessage(text, duration = 2000) {
+            messageDisplay.textContent = text;
+            messageDisplay.classList.add('show');
+            setTimeout(() => {
+                messageDisplay.classList.remove('show');
+            }, duration);
+        }
+
+        // Animate dice roll
+        function animateDiceRoll(value, callback) {
+            diceValue.textContent = '?';
+            diceDisplay.classList.add('show', 'dice-rolling');
+
+            let count = 0;
+            const interval = setInterval(() => {
+                diceValue.textContent = Math.floor(Math.random() * 6) + 1;
+                count++;
+                if (count > 10) {
+                    clearInterval(interval);
+                    diceValue.textContent = value;
+                    diceDisplay.classList.remove('dice-rolling');
+                    setTimeout(() => {
+                        diceDisplay.classList.remove('show');
+                        if (callback) callback();
+                    }, 1500);
+                }
+            }, 100);
+        }
+
+        // Move pawn with animation
+        function movePawn(fromPos, toPos, callback) {
+            const steps = Math.abs(toPos - fromPos);
+            const direction = toPos > fromPos ? 1 : -1;
+            let currentStep = 0;
+
+            const interval = setInterval(() => {
+                currentStep++;
+                const intermediatePos = fromPos + (direction * currentStep);
+                setPawnPosition(intermediatePos);
+
+                if (currentStep >= steps) {
+                    clearInterval(interval);
+                    if (callback) callback();
+                }
+            }, 300);
+        }
+
+        // Handle dice roll from game.js
+        window.handleDiceRoll = async function(roll, intermediatePos, finalPos, won) {
+            if (window.gameState.isPlaying) return;
+            window.gameState.isPlaying = true;
+
+            const currentPos = window.gameState.position;
+
+            // Show "Roll the Dice!" message
+            showMessage('🎲 Rolling the Dice!', 1500);
+
+            // Wait a bit before showing dice
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Animate dice roll
+            animateDiceRoll(roll, async () => {
+                // Move to intermediate position
+                movePawn(currentPos, intermediatePos, async () => {
+                    // Check for snake or ladder
+                    if (intermediatePos !== finalPos) {
+                        const isSnake = finalPos < intermediatePos;
+                        const message = isSnake ?
+                            `🐍 Oh no! Snake to ${finalPos}!` :
+                            `🪜 Lucky! Ladder to ${finalPos}!`;
+
+                        showMessage(message, 2000);
+
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+
+                        // Move to final position (snake/ladder)
+                        movePawn(intermediatePos, finalPos, () => {
+                            window.gameState.position = finalPos;
+
+                            if (won) {
+                                setTimeout(() => {
+                                    winScreen.classList.add('show');
+                                    window.gameState.hasWon = true;
+                                }, 500);
+                            }
+
+                            window.gameState.isPlaying = false;
+                        });
+                    } else {
+                        window.gameState.position = finalPos;
+
+                        if (won) {
+                            setTimeout(() => {
+                                winScreen.classList.add('show');
+                                window.gameState.hasWon = true;
+                            }, 500);
+                        }
+
+                        window.gameState.isPlaying = false;
+                    }
+                });
+            });
+        };
+
+        // Reset game
+        function resetGame() {
+            window.gameState = {
+                position: 1,
+                isPlaying: false,
+                hasWon: false
+            };
+            setPawnPosition(1);
+            winScreen.classList.remove('show');
+            showMessage('🎮 New Game Started!', 2000);
+        }
+
+        // Make resetGame available globally
+        window.resetGame = resetGame;
+
+        console.log('🎲 Snakes and Ladders overlay loaded with calibrated positions!');
+        console.log('📍 Pawn at position:', window.gameState.position);
+    </script>
+</body>
+</html>

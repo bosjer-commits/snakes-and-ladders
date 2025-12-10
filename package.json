@@ -1,0 +1,23 @@
+{
+  "name": "snakes-and-ladders-slot-overlay",
+  "version": "1.0.0",
+  "description": "Snakes and Ladders gamification overlay for Big Stack Nutcracker slot game",
+  "main": "game.js",
+  "scripts": {
+    "start": "node game.js",
+    "dev": "nodemon game.js"
+  },
+  "keywords": [
+    "gamification",
+    "slot-game",
+    "snakes-and-ladders"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
