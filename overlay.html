@@ -309,6 +309,59 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Dice positioned between reels and spin button */
+        #dice-container {
+            position: absolute;
+            top: 67.5%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            z-index: 150;
+            display: none;
+        }
+
+        #dice-container.show {
+            display: block;
+        }
+
+        #dice-container.rolling {
+            animation: rollingGlow 0.5s ease-in-out infinite;
+        }
+
+        @keyframes rollingGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8))
+                        drop-shadow(0 0 40px rgba(255, 255, 255, 0.6));
+            }
+            50% {
+                filter: drop-shadow(0 0 30px rgba(255, 255, 255, 1))
+                        drop-shadow(0 0 60px rgba(255, 255, 255, 0.8));
+            }
+        }
+
+        #dice-container.final-result {
+            animation: highlightGlow 1s ease-in-out infinite;
+        }
+
+        @keyframes highlightGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8))
+                        drop-shadow(0 0 40px rgba(255, 215, 0, 0.6));
+            }
+            50% {
+                filter: drop-shadow(0 0 30px rgba(255, 215, 0, 1))
+                        drop-shadow(0 0 60px rgba(255, 215, 0, 0.8));
+            }
+        }
+
+        #dice-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: opacity 0.2s;
+        }
     </style>
 </head>
 <body>
@@ -325,6 +378,11 @@
 
             <!-- Pawn -->
             <div id="pawn"></div>
+
+            <!-- Dice -->
+            <div id="dice-container">
+                <img id="dice-image" src="dice1.png" alt="Dice">
+            </div>
 
             <!-- Position info -->
             <div id="position-info">
@@ -401,6 +459,8 @@
         const messageDisplay = document.getElementById('message-display');
         const winScreen = document.getElementById('win-screen');
         const currentPositionSpan = document.getElementById('current-position');
+        const diceContainer = document.getElementById('dice-container');
+        const diceImage = document.getElementById('dice-image');
 
         // Initialize pawn at position 1
         function setPawnPosition(position) {
@@ -433,25 +493,40 @@
             }, duration);
         }
 
+        // Change dice image to show specific value
+        function setDiceImage(value) {
+            diceImage.src = `dice${value}.png`;
+        }
+
         // Animate dice roll
         function animateDiceRoll(value, callback) {
-            diceValue.textContent = '?';
-            diceDisplay.classList.add('show', 'dice-rolling');
+            // Show the dice container with white glow during rolling
+            diceContainer.classList.add('show', 'rolling');
 
             let count = 0;
             const interval = setInterval(() => {
-                diceValue.textContent = Math.floor(Math.random() * 6) + 1;
+                // Show random dice image during animation
+                const randomDice = Math.floor(Math.random() * 6) + 1;
+                diceImage.src = `dice${randomDice}.png`;
                 count++;
-                if (count > 10) {
+
+                if (count > 20) {
                     clearInterval(interval);
-                    diceValue.textContent = value;
-                    diceDisplay.classList.remove('dice-rolling');
+
+                    // Stop rolling and show final value with golden highlight
+                    setDiceImage(value);
+                    diceContainer.classList.remove('rolling');
+                    diceContainer.classList.add('final-result');
+
+                    // Start pawn movement immediately
+                    if (callback) callback();
+
+                    // Keep dice visible with glow for 3 seconds
                     setTimeout(() => {
-                        diceDisplay.classList.remove('show');
-                        if (callback) callback();
-                    }, 1500);
+                        diceContainer.classList.remove('show', 'final-result');
+                    }, 3000);
                 }
-            }, 100);
+            }, 50);
         }
 
         // Move pawn with animation
@@ -478,12 +553,6 @@
             window.gameState.isPlaying = true;
 
             const currentPos = window.gameState.position;
-
-            // Show "Roll the Dice!" message
-            showMessage('🎲 Rolling the Dice!', 1500);
-
-            // Wait a bit before showing dice
-            await new Promise(resolve => setTimeout(resolve, 1500));
 
             // Animate dice roll
             animateDiceRoll(roll, async () => {
